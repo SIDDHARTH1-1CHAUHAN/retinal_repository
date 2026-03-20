@@ -1,0 +1,54 @@
+defaults:
+  input_shape: [224, 224, 3]
+  epochs: 15
+  batch_size: 16
+  learning_rate: 0.0003
+  patience: 3
+  seed: 42
+  brightness_delta: 0.15
+  use_class_weights: true
+
+paths:
+  master_csv: data/metadata/master.csv
+  train_csv: data/splits/train.csv
+  val_csv: data/splits/val.csv
+  test_csv: data/splits/test.csv
+  image_path_contract: preprocessed_224x224x3_float32_normalized_npy_tensor
+
+stage2_dr:
+  run_dir: reports/stage2_dr
+  figures_dir: reports/figures/stage2_dr
+  input_shape: [224, 224, 3]
+  model:
+    patch_size: 16
+    projection_dim: 64
+    transformer_layers: 6
+    num_heads: 4
+    transformer_units: [128, 64]
+    mlp_head_units: [256, 128]
+    dropout_rate: 0.1
+    attention_dropout: 0.1
+
+stage2_hr:
+  run_dir: reports/stage2_hr
+  figures_dir: reports/figures/stage2_hr
+  input_shape: [224, 224, 3]
+  model:
+    patch_size: 16
+    projection_dim: 64
+    transformer_layers: 6
+    num_heads: 4
+    transformer_units: [128, 64]
+    mlp_head_units: [256, 128]
+    dropout_rate: 0.1
+    attention_dropout: 0.1
+
+inference:
+  stage1:
+    model_path: reports/stage1/best_model.keras
+    labels: [normal, dr, hr]
+    load_strategy: preloaded_model_or_custom_objects
+  stage2:
+    dr_model_path: reports/stage2_dr/checkpoints/best_model.keras
+    hr_model_path: reports/stage2_hr/checkpoints/best_model.keras
+

@@ -1,0 +1,48 @@
+data:
+  # Shared pipeline contract: image_path should point to preprocessed
+  # 224x224x3 float32 normalized .npy tensors by default.
+  metadata_path: data/metadata/master.csv
+  train_split_path: data/splits/train.csv
+  val_split_path: data/splits/val.csv
+  test_split_path: data/splits/test.csv
+  image_column: image_path
+  label_column: disease_label
+  label_order:
+    - normal
+    - dr
+    - hr
+  input_size:
+    - 224
+    - 224
+
+model:
+  name: stage1_vit_b16
+  variant: vit_b16
+  patch_size: 16
+  hidden_size: 768
+  transformer_layers: 12
+  num_heads: 12
+  mlp_dim: 3072
+  dropout_rate: 0.1
+  attention_dropout_rate: 0.1
+  classifier: token
+
+training:
+  batch_size: 16
+  epochs: 15
+  learning_rate: 0.0001
+  early_stopping_patience: 3
+  use_class_weights: true
+  seed: 42
+
+outputs:
+  run_root: reports/stage1
+  figures_dir: reports/figures/stage1
+  best_model_name: best_model.keras
+  final_model_name: final_model.keras
+  history_name: history.csv
+  evaluation_name: evaluation.json
+  label_map_name: label_order.json
+  confusion_matrix_name: confusion_matrix.csv
+  confusion_matrix_figure_name: confusion_matrix.png
+  evaluation_split: val

@@ -1,0 +1,143 @@
+project:
+  name: retinal-vit-pipeline
+  framework: tensorflow-keras
+  runtime_targets:
+    - python
+    - tensorflow
+    - keras
+    - opencv
+    - google-colab
+
+interface_contract:
+  metadata: data/metadata/master.csv
+  splits:
+    train: data/splits/train.csv
+    val: data/splits/val.csv
+    test: data/splits/test.csv
+  image_tensor:
+    shape: [224, 224, 3]
+    dtype: float32
+    normalization: 0_to_1
+  final_prediction_fields:
+    - disease
+    - severity
+    - confidence
+
+labels:
+  stage1:
+    normal: 0
+    dr: 1
+    hr: 2
+  stage2_dr: [0, 1, 2, 3, 4]
+  stage2_hr: [1, 2, 3, 4]
+  inference_rule:
+    normal: 0
+    dr: call_dr_grader
+    hr: call_hr_grader
+
+preprocessing:
+  crop_black_borders:
+    enabled: true
+    threshold: 7
+  gaussian_blur:
+    enabled: true
+    kernel_size: [5, 5]
+    sigma: 0.0
+  clahe:
+    enabled: true
+    clip_limit: 2.0
+    tile_grid_size: [8, 8]
+  resize:
+    size: [224, 224]
+  normalize:
+    enabled: true
+    scale: 255.0
+
+augmentation:
+  rotation_degrees: 15
+  zoom_range: [0.9, 1.1]
+  brightness_delta: 0.15
+  horizontal_flip: false
+
+splits:
+  ratio:
+    train: 0.70
+    val: 0.15
+    test: 0.15
+  seed: 42
+  group_column: patient_or_case_id
+  stratify_columns:
+    - source_dataset
+    - disease_label
+  duplicate_guard:
+    method: exact_dhash_after_preprocessing
+    notes: Prevents identical duplicates from crossing splits when processed tensors are available.
+
+datasets:
+  eyepacs:
+    enabled: true
+    required: false
+    parser: eyepacs
+    labels_csv: data/raw/eyepacs/trainLabels.csv
+    image_dir: data/raw/eyepacs/images
+    image_column: image
+    grade_column: level
+    is_manual_label: true
+  aptos:
+    enabled: true
+    required: false
+    parser: aptos
+    labels_csv: data/raw/aptos/train.csv
+    image_dir: data/raw/aptos/images
+    image_column: id_code
+    grade_column: diagnosis
+    is_manual_label: true
+  messidor:
+    enabled: false
+    required: false
+    parser: messidor
+    labels_csv: data/raw/messidor/labels.csv
+    image_dir: data/raw/messidor/images
+    image_column: image_id
+    grade_column: dr_grade
+    is_manual_label: true
+  odir:
+    enabled: true
+    required: true
+    parser: odir
+    labels_csv: data/raw/odir/full_df.csv
+    image_dir: data/raw/odir/images
+    is_manual_label: true
+  rvm:
+    enabled: true
+    required: true
+    parser: rvm_hr
+    labels_csv: data/raw/rvm/labels.csv
+    image_dir: data/raw/rvm/images
+    image_column: image_id
+    grade_column: hr_grade
+    is_manual_label: true
+  diaretdb1:
+    enabled: false
+    required: false
+    parser: support_binary
+    labels_csv: data/raw/diaretdb1/labels.csv
+    image_dir: data/raw/diaretdb1/images
+    positive_label: dr
+    is_manual_label: true
+  stare:
+    enabled: false
+    required: false
+    parser: support_binary
+    labels_csv: data/raw/stare/labels.csv
+    image_dir: data/raw/stare/images
+    positive_label: dr
+    is_manual_label: true
+  drive:
+    enabled: false
+    required: false
+    parser: support_binary
+    labels_csv: data/raw/drive/labels.csv
+    image_dir: data/raw/drive/images
+    positive_label: dr
+    is_manual_label: true
