@@ -376,20 +376,24 @@ def history_to_dict(history: tf.keras.callbacks.History) -> dict[str, list[float
 def build_callbacks(
     checkpoint_path: str | Path,
     patience: int = 3,
-    monitor: str = "val_loss",
+    monitor: str = "val_accuracy",
+    mode: str | None = None,
 ) -> list[tf.keras.callbacks.Callback]:
     checkpoint = Path(checkpoint_path)
     ensure_directory(checkpoint.parent)
+    resolved_mode = mode or ("min" if "loss" in monitor else "max")
     return [
         tf.keras.callbacks.ModelCheckpoint(
             filepath=str(checkpoint),
             monitor=monitor,
+            mode=resolved_mode,
             save_best_only=True,
             save_weights_only=False,
             verbose=1,
         ),
         tf.keras.callbacks.EarlyStopping(
             monitor=monitor,
+            mode=resolved_mode,
             patience=patience,
             restore_best_weights=True,
             verbose=1,

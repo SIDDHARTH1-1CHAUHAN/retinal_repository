@@ -4,9 +4,8 @@ from typing import Any, Mapping
 
 from src.models.stage2_common import Stage2TaskSpec, build_vit_classifier
 
-DR_CLASS_VALUES = (0, 1, 2, 3, 4)
+DR_CLASS_VALUES = (1, 2, 3, 4)
 DR_CLASS_NAMES = (
-    "No DR (Grade 0)",
     "Mild NPDR (Grade 1)",
     "Moderate NPDR (Grade 2)",
     "Severe NPDR (Grade 3)",

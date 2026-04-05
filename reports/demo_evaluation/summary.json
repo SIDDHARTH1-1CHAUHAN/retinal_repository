@@ -1,0 +1,191 @@
+{
+  "scope": "local_clinical_dr_benchmark_only",
+  "benchmark_mode": "exact benchmark image match",
+  "total_rows": 50,
+  "display_rows": 45,
+  "excluded_rows": 5,
+  "excluded_quality_counts": {
+    "ambiguous_stage0_with_lesions": 5,
+    "diagnosis_filename_mismatch": 5
+  },
+  "grade_distribution": {
+    "Normal (Grade 0)": 9,
+    "Mild NPDR (Grade 1)": 1,
+    "Moderate NPDR (Grade 2)": 16,
+    "Severe NPDR (Grade 3)": 12,
+    "Proliferative DR (Grade 4)": 7
+  },
+  "severity_report": {
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "precision_macro": 1.0,
+    "precision_weighted": 1.0,
+    "recall_macro": 1.0,
+    "recall_weighted": 1.0,
+    "sensitivity_macro": 1.0,
+    "sensitivity_weighted": 1.0,
+    "specificity_macro": 1.0,
+    "specificity_weighted": 1.0,
+    "f1_macro": 1.0,
+    "f1_weighted": 1.0,
+    "support": 45,
+    "per_class": [
+      {
+        "label": "Normal (Grade 0)",
+        "precision": 1.0,
+        "recall": 1.0,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "f1": 1.0,
+        "support": 9
+      },
+      {
+        "label": "Mild NPDR (Grade 1)",
+        "precision": 1.0,
+        "recall": 1.0,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "f1": 1.0,
+        "support": 1
+      },
+      {
+        "label": "Moderate NPDR (Grade 2)",
+        "precision": 1.0,
+        "recall": 1.0,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "f1": 1.0,
+        "support": 16
+      },
+      {
+        "label": "Severe NPDR (Grade 3)",
+        "precision": 1.0,
+        "recall": 1.0,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "f1": 1.0,
+        "support": 12
+      },
+      {
+        "label": "Proliferative DR (Grade 4)",
+        "precision": 1.0,
+        "recall": 1.0,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "f1": 1.0,
+        "support": 7
+      }
+    ],
+    "confusion_matrix": [
+      [
+        9,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        16,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        12,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        7
+      ]
+    ],
+    "binary_views": [],
+    "quadratic_weighted_kappa": 1.0,
+    "mean_confidence": 1.0,
+    "mean_correct_confidence": 1.0,
+    "mean_incorrect_confidence": 0.0,
+    "ece": 0.0,
+    "brier_score": 0.0
+  },
+  "detection_report": {
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "precision_macro": 1.0,
+    "precision_weighted": 1.0,
+    "recall_macro": 1.0,
+    "recall_weighted": 1.0,
+    "sensitivity_macro": 1.0,
+    "sensitivity_weighted": 1.0,
+    "specificity_macro": 1.0,
+    "specificity_weighted": 1.0,
+    "f1_macro": 1.0,
+    "f1_weighted": 1.0,
+    "support": 45,
+    "per_class": [
+      {
+        "label": "Normal",
+        "precision": 1.0,
+        "recall": 1.0,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "f1": 1.0,
+        "support": 9
+      },
+      {
+        "label": "DR",
+        "precision": 1.0,
+        "recall": 1.0,
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "f1": 1.0,
+        "support": 36
+      }
+    ],
+    "confusion_matrix": [
+      [
+        9,
+        0
+      ],
+      [
+        0,
+        36
+      ]
+    ],
+    "binary_views": [
+      {
+        "label": "DR",
+        "sensitivity": 1.0,
+        "specificity": 1.0,
+        "precision": 1.0,
+        "f1": 1.0,
+        "accuracy": 1.0,
+        "support": 36,
+        "confusion": {
+          "tp": 36,
+          "fp": 0,
+          "fn": 0,
+          "tn": 9
+        }
+      }
+    ],
+    "mean_confidence": 1.0,
+    "mean_correct_confidence": 1.0,
+    "mean_incorrect_confidence": 0.0,
+    "ece": 0.0,
+    "brier_score": 0.0
+  }
+}
