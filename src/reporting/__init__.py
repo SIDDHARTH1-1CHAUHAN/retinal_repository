@@ -1,1 +1,1 @@
-"""Reporting utilities for the tomorrow evaluation package."""
+"""Reporting utilities for the The evaluation package."""

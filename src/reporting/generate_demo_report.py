@@ -19,7 +19,7 @@ from src.inference.demo_runtime import benchmark_summary, illustrative_training_
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate the tomorrow evaluation report package.")
+    parser = argparse.ArgumentParser(description="Generate the The evaluation report package.")
     parser.add_argument("--output-dir", default="reports/demo_evaluation")
     return parser.parse_args()
 
@@ -190,7 +190,7 @@ def build_report_markdown(summary: dict, story: dict, sample_images: list[dict[s
             "",
             "## Evaluation Notes",
             "- Genuine metrics in this report are valid only for the curated local clinical DR benchmark.",
-            "- Uploaded images outside that benchmark are intentionally marked unvalidated in the tomorrow demo build.",
+            "- Uploaded images outside that benchmark are intentionally marked unvalidated in the The demo build.",
             "- The illustrative graphs show the optimization direction expected after full Kaggle-based training.",
         ]
     )
@@ -239,7 +239,7 @@ def main() -> None:
     sample_images = _copy_sample_images(output_dir)
 
     report_markdown = build_report_markdown(summary, story, sample_images, assets_dir)
-    (output_dir / "tomorrow_evaluation_report.md").write_text(report_markdown, encoding="utf-8")
+    (output_dir / "The_evaluation_report.md").write_text(report_markdown, encoding="utf-8")
     (output_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps({"report_dir": str(output_dir)}, indent=2))
 

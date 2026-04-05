@@ -28,7 +28,7 @@ DR_STAGE2_LABELS = [
     "Proliferative DR (Grade 4)",
 ]
 PRIMARY_EXCLUDED_FLAGS = {"ambiguous_stage0_with_lesions"}
-HR_PENDING_MESSAGE = "Unavailable in tomorrow demo build. Graded HR data is not staged yet."
+HR_PENDING_MESSAGE = "Unavailable in The demo build. Graded HR data is not staged yet."
 METRICS_SCOPE = "local_clinical_dr_benchmark_only"
 
 
@@ -115,7 +115,7 @@ def build_unvalidated_response() -> dict[str, Any]:
         "mode": "benchmark_lookup",
         "status": "unvalidated_input",
         "metrics_scope": METRICS_SCOPE,
-        "message": "This image is not part of the validated local benchmark used for tomorrow's demo.",
+        "message": "This image is not part of the validated local benchmark used for The's demo.",
         "hr_status": HR_PENDING_MESSAGE,
     }
 

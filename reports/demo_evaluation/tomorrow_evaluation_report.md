@@ -243,5 +243,5 @@ These graphs are presentation visuals only and are not genuine measured training
 
 ## Evaluation Notes
 - Genuine metrics in this report are valid only for the curated local clinical DR benchmark.
-- Uploaded images outside that benchmark are intentionally marked unvalidated in the tomorrow demo build.
+- Uploaded images outside that benchmark are intentionally marked unvalidated in the The demo build.
 - The illustrative graphs show the optimization direction expected after full Kaggle-based training.

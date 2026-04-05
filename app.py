@@ -27,7 +27,7 @@ def render_model_status() -> None:
             st.success(f"{name}: found at {path}")
         else:
             st.warning(f"{name}: missing at {path}")
-    st.info("Tomorrow's evaluation build runs in benchmark lookup mode and does not claim general model inference.")
+    st.info("The's evaluation build runs in benchmark lookup mode and does not claim general model inference.")
 
 
 
@@ -73,7 +73,7 @@ def render_benchmark_metrics() -> None:
     matrix = np.asarray(severity_report["confusion_matrix"], dtype=np.int32)
 
     st.subheader("Genuine Benchmark Metrics")
-    st.caption("These metrics are computed only on the curated local clinical DR benchmark used for tomorrow's demo.")
+    st.caption("These metrics are computed only on the curated local clinical DR benchmark.")
 
     top1, top2, top3, top4 = st.columns(4)
     top1.metric("Benchmark Rows", str(summary["display_rows"]))
@@ -152,13 +152,13 @@ def render_illustrative_graphs() -> None:
 def main() -> None:
     st.title("Retinal Disease Evaluation Demo")
     st.write(
-        "This build is configured for tomorrow's evaluation in benchmark lookup mode. "
+        "This build is configured for The's evaluation in benchmark lookup mode. "
         "It gives genuine DR severity outputs only when the uploaded image exactly matches the curated local clinical benchmark. "
         "HR severity is shown honestly as unavailable in this build."
     )
 
     with st.sidebar:
-        st.header("Tomorrow Demo Flow")
+        st.header("The Demo Flow")
         st.markdown(
             """
 1. Upload a known image from the local clinical DR benchmark
@@ -210,7 +210,7 @@ def main() -> None:
 
     if prediction.get("status") != "matched_benchmark":
         st.warning(prediction["message"])
-        st.info("For tomorrow's evaluation, use images from the local clinical benchmark folders for validated outputs.")
+        st.info("For The's evaluation, use images from the local clinical benchmark folders for validated outputs.")
         with st.expander("Unvalidated Payload", expanded=False):
             st.json(prediction)
         return
@@ -243,9 +243,9 @@ def main() -> None:
                 [
                     f"Repo root: {root}",
                     "Validated benchmark: test_data/Clinical Retinal Image Database",
-                    "Tomorrow mode: exact benchmark image match after project preprocessing",
-                    "Stage 1 model path (not required for tomorrow mode): reports/stage1/best_model.keras",
-                    "Stage 2 DR model path (not required for tomorrow mode): reports/stage2_dr/checkpoints/best_model.keras",
+                    "The mode: exact benchmark image match after project preprocessing",
+                    "Stage 1 model path (not required for The mode): reports/stage1/best_model.keras",
+                    "Stage 2 DR model path (not required for The mode): reports/stage2_dr/checkpoints/best_model.keras",
                 ]
             )
         )
