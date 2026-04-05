@@ -14,8 +14,21 @@ from tensorflow import keras
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from src.eval.metrics import evaluate_predictions
+from src.eval.plots import plot_confusion_matrix, plot_training_history
 from src.models.stage1_vit import build_stage1_vit, compile_stage1_model
 from src.training.datasets_stage1 import Stage1Datasets, load_stage1_datasets
+
+CANONICAL_PREDICTION_FIELDS = [
+    "disease",
+    "severity",
+    "grade",
+    "confidence",
+    "stage1_confidence",
+    "stage2_confidence",
+    "stage1_probabilities",
+    "stage2_probabilities",
+]
 
 
 def _repo_root() -> Path:
@@ -74,68 +87,9 @@ def _ensure_output_directories(output_config: dict[str, Any]) -> dict[str, Path]
     }
 
 
-def _metrics_from_confusion_matrix(confusion: np.ndarray) -> dict[str, float]:
-    total = confusion.sum()
-    tp = np.diag(confusion).astype(np.float64)
-    fp = confusion.sum(axis=0).astype(np.float64) - tp
-    fn = confusion.sum(axis=1).astype(np.float64) - tp
-    precision = np.divide(tp, tp + fp, out=np.zeros_like(tp), where=(tp + fp) != 0)
-    recall = np.divide(tp, tp + fn, out=np.zeros_like(tp), where=(tp + fn) != 0)
-    f1_score = np.divide(
-        2.0 * precision * recall,
-        precision + recall,
-        out=np.zeros_like(tp),
-        where=(precision + recall) != 0,
-    )
-    return {
-        "accuracy": float(tp.sum() / total) if total else 0.0,
-        "precision": float(precision.mean()),
-        "recall": float(recall.mean()),
-        "f1_score": float(f1_score.mean()),
-    }
-
-
-def _save_confusion_matrix(
-    confusion: np.ndarray,
-    label_order: list[str],
-    csv_path: Path,
-    figure_path: Path,
-) -> None:
+def _save_confusion_matrix_csv(confusion: np.ndarray, label_order: list[str], csv_path: Path) -> None:
     frame = pd.DataFrame(confusion, index=label_order, columns=label_order)
     frame.to_csv(csv_path, index=True)
-
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError:
-        return
-
-    plt.figure(figsize=(6, 5))
-    plt.imshow(confusion, cmap="Blues")
-    plt.title("Stage 1 Confusion Matrix")
-    plt.colorbar()
-    tick_positions = np.arange(len(label_order))
-    plt.xticks(tick_positions, label_order)
-    plt.yticks(tick_positions, label_order)
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
-    threshold = confusion.max() / 2.0 if confusion.size else 0.0
-    for row_index in range(confusion.shape[0]):
-        for column_index in range(confusion.shape[1]):
-            value = int(confusion[row_index, column_index])
-            color = "white" if value > threshold else "black"
-            plt.text(column_index, row_index, value, ha="center", va="center", color=color)
-    plt.tight_layout()
-    plt.savefig(figure_path, dpi=200)
-    plt.close()
-
-
-def _predict_labels(model: keras.Model, dataset: tf.data.Dataset) -> np.ndarray:
-    probabilities = model.predict(dataset, verbose=0)
-    return np.argmax(probabilities, axis=1)
-
-
-def _labels_from_frame(frame: pd.DataFrame) -> np.ndarray:
-    return frame["label_index"].astype("int32").to_numpy()
 
 
 def _select_eval_split(
@@ -217,8 +171,10 @@ def _save_training_contract(
     payload = {
         "labels": label_order,
         "input_shape": [int(input_size[0]), int(input_size[1]), 3],
-        "prediction_fields": ["disease", "severity", "confidence"],
+        "prediction_fields": CANONICAL_PREDICTION_FIELDS,
         "saved_model_format": "keras_v3",
+        "stage2_dr_grades": [1, 2, 3, 4],
+        "stage2_hr_grades": [1, 2, 3, 4],
     }
     label_map_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
@@ -249,27 +205,32 @@ def main() -> None:
 
     eval_split_name, eval_dataset, eval_frame = _select_eval_split(
         datasets=datasets,
-        split_name=str(config["outputs"].get("evaluation_split", "val")),
+        split_name=str(config["outputs"].get("evaluation_split", "test")),
     )
     eval_metrics = model.evaluate(eval_dataset, return_dict=True, verbose=0)
-    y_true = _labels_from_frame(eval_frame)
-    y_pred = _predict_labels(model, eval_dataset)
-    confusion = tf.math.confusion_matrix(
-        y_true,
-        y_pred,
-        num_classes=len(datasets.label_order),
-    ).numpy()
-    aggregate_metrics = _metrics_from_confusion_matrix(confusion)
+    probabilities = np.asarray(model.predict(eval_dataset, verbose=0), dtype=np.float64)
+    y_true = eval_frame["label_index"].astype("int32").to_numpy()
+    y_pred = probabilities.argmax(axis=1)
+    report = evaluate_predictions(
+        y_true=y_true,
+        y_pred=y_pred,
+        probabilities=probabilities,
+        label_names=datasets.label_order,
+        positive_labels=["dr", "hr"],
+    )
 
     output_config = config["outputs"]
+    confusion = np.asarray(report["confusion_matrix"], dtype=np.int32)
     confusion_csv_path = output_paths["run_root"] / output_config["confusion_matrix_name"]
     confusion_figure_path = output_paths["figures_dir"] / output_config["confusion_matrix_figure_name"]
-    _save_confusion_matrix(
-        confusion=confusion,
-        label_order=datasets.label_order,
-        csv_path=confusion_csv_path,
-        figure_path=confusion_figure_path,
+    _save_confusion_matrix_csv(confusion=confusion, label_order=datasets.label_order, csv_path=confusion_csv_path)
+    plot_confusion_matrix(
+        matrix=confusion,
+        class_names=datasets.label_order,
+        output_path=confusion_figure_path,
+        title=f"Stage 1 {eval_split_name.title()} Confusion Matrix",
     )
+    plot_training_history(history.history, output_paths["figures_dir"], prefix="stage1")
     _save_training_contract(
         output_paths=output_paths,
         output_config=output_config,
@@ -289,8 +250,7 @@ def main() -> None:
         "class_weights": datasets.class_weights,
         "history_keys": list(history.history.keys()),
         "keras_metrics": {key: float(value) for key, value in eval_metrics.items()},
-        "aggregate_metrics": aggregate_metrics,
-        "confusion_matrix": confusion.tolist(),
+        "metrics": report,
     }
     evaluation_path.write_text(json.dumps(evaluation_payload, indent=2), encoding="utf-8")
 

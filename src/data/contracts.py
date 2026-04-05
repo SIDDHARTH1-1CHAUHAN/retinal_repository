@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
@@ -23,6 +23,11 @@ OPTIONAL_METADATA_COLUMNS = [
     "source_image_id",
     "raw_image_path",
     "duplicate_group_id",
+    "dataset_role",
+    "label_source",
+    "quality_flag",
+    "sha256",
+    "dhash",
 ]
 
 MASTER_METADATA_PATH = Path("data/metadata/master.csv")
@@ -31,14 +36,16 @@ SPLIT_OUTPUT_PATHS = {
     "val": Path("data/splits/val.csv"),
     "test": Path("data/splits/test.csv"),
 }
+EXTERNAL_TEST_OUTPUT_PATH = Path("data/splits/external_test.csv")
 
 STAGE1_LABEL_TO_INDEX = {"normal": 0, "dr": 1, "hr": 2}
-DR_STAGE2_CLASSES = [0, 1, 2, 3, 4]
+DR_STAGE2_CLASSES = [1, 2, 3, 4]
 HR_STAGE2_CLASSES = [1, 2, 3, 4]
-FINAL_PREDICTION_FIELDS = ["disease", "severity", "confidence"]
+FINAL_PREDICTION_FIELDS = ["disease", "severity", "grade", "confidence", "stage1_confidence", "stage2_confidence", "stage1_probabilities", "stage2_probabilities"]
 
 ALLOWED_DISEASE_LABELS = set(STAGE1_LABEL_TO_INDEX)
 ALLOWED_SPLITS = {"", "train", "val", "test"}
+ALLOWED_DATASET_ROLES = {"", "train", "external_test", "demo_only"}
 
 
 def is_stage1_eligible_row(row: pd.Series) -> bool:
@@ -54,7 +61,7 @@ def is_stage2_dr_eligible_row(row: pd.Series) -> bool:
     disease_label = str(row.get("disease_label", "")).strip().lower()
     dr_grade = normalize_optional_int(row.get("dr_grade"))
     hr_grade = normalize_optional_int(row.get("hr_grade"))
-    return disease_label in {"normal", "dr"} and pd.notna(dr_grade) and pd.isna(hr_grade)
+    return disease_label == "dr" and pd.notna(dr_grade) and pd.isna(hr_grade)
 
 
 def is_stage2_hr_eligible_row(row: pd.Series) -> bool:
@@ -129,6 +136,16 @@ def ensure_metadata_contract(df: pd.DataFrame) -> pd.DataFrame:
     normalized["is_manual_label"] = normalized["is_manual_label"].astype(bool)
     normalized["dr_grade"] = normalized["dr_grade"].apply(normalize_optional_int).astype("Int64")
     normalized["hr_grade"] = normalized["hr_grade"].apply(normalize_optional_int).astype("Int64")
+    normalized["dataset_role"] = normalized["dataset_role"] if "dataset_role" in normalized.columns else ""
+    normalized["dataset_role"] = normalized["dataset_role"].fillna("").astype(str).str.strip().str.lower()
+    normalized["label_source"] = normalized["label_source"] if "label_source" in normalized.columns else ""
+    normalized["label_source"] = normalized["label_source"].fillna("").astype(str).str.strip()
+    normalized["quality_flag"] = normalized["quality_flag"] if "quality_flag" in normalized.columns else ""
+    normalized["quality_flag"] = normalized["quality_flag"].fillna("").astype(str).str.strip().str.lower()
+    normalized["sha256"] = normalized["sha256"] if "sha256" in normalized.columns else ""
+    normalized["sha256"] = normalized["sha256"].fillna("").astype(str).str.strip().str.lower()
+    normalized["dhash"] = normalized["dhash"] if "dhash" in normalized.columns else ""
+    normalized["dhash"] = normalized["dhash"].fillna("").astype(str).str.strip().str.lower()
 
     invalid_labels = sorted(set(normalized["disease_label"]) - ALLOWED_DISEASE_LABELS)
     if invalid_labels:
@@ -138,12 +155,17 @@ def ensure_metadata_contract(df: pd.DataFrame) -> pd.DataFrame:
     if invalid_splits:
         raise ValueError(f"Unsupported split values: {invalid_splits}")
 
+    invalid_roles = sorted(set(normalized["dataset_role"]) - ALLOWED_DATASET_ROLES)
+    if invalid_roles:
+        raise ValueError(f"Unsupported dataset_role values: {invalid_roles}")
+
     if normalized["image_id"].duplicated().any():
         duplicates = normalized.loc[normalized["image_id"].duplicated(), "image_id"].tolist()[:10]
         raise ValueError(f"Duplicate image_id values detected: {duplicates}")
 
-    if not normalized["dr_grade"].dropna().isin(DR_STAGE2_CLASSES).all():
-        raise ValueError(f"dr_grade values must be within {DR_STAGE2_CLASSES}")
+    allowed_dr_values = [0, *DR_STAGE2_CLASSES]
+    if not normalized["dr_grade"].dropna().isin(allowed_dr_values).all():
+        raise ValueError(f"dr_grade values must be within {allowed_dr_values}")
     if not normalized["hr_grade"].dropna().isin(HR_STAGE2_CLASSES).all():
         raise ValueError(f"hr_grade values must be within {HR_STAGE2_CLASSES}")
 
@@ -161,6 +183,10 @@ def ensure_metadata_contract(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("dr samples cannot have hr_grade")
     if not normalized.loc[normal_rows, "dr_grade"].dropna().isin([0]).all():
         raise ValueError("normal samples may only use dr_grade=0 or null")
+    if not normalized.loc[dr_rows, "dr_grade"].dropna().isin(DR_STAGE2_CLASSES).all():
+        raise ValueError("dr samples may only use dr_grade values in the DR stage-2 class set")
+    if normalized.loc[normalized["dataset_role"] == "external_test", "split"].ne("").any():
+        raise ValueError("external_test samples must not be assigned train/val/test splits")
 
     ordered_columns = MANDATORY_METADATA_COLUMNS + [
         column for column in OPTIONAL_METADATA_COLUMNS if column in normalized.columns

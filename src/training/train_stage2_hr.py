@@ -82,9 +82,15 @@ def run_evaluation(
 ) -> None:
     if frame.empty:
         return
-    probabilities = model.predict(dataset, verbose=0)
+    probabilities = np.asarray(model.predict(dataset, verbose=0), dtype=np.float64)
     predictions = probabilities.argmax(axis=1)
-    metrics_payload = evaluate_predictions(labels, predictions, label_names=list(HR_CLASS_NAMES))
+    metrics_payload = evaluate_predictions(
+        labels,
+        y_pred=predictions,
+        probabilities=probabilities,
+        label_names=list(HR_CLASS_NAMES),
+        ordered=True,
+    )
     save_json(metrics_payload, run_dir / f"{split_name}_metrics.json")
     plot_confusion_matrix(
         np.asarray(metrics_payload["confusion_matrix"]),
@@ -125,7 +131,7 @@ def main() -> None:
     )
 
     if train_frame.empty:
-        raise ValueError("No HR samples were found in the training split.")
+        raise ValueError("No HR grade 1-4 samples were found in the training split.")
 
     train_dataset, train_labels = make_dataset(
         train_frame,
@@ -160,10 +166,11 @@ def main() -> None:
     )
 
     class_weights = compute_class_weights(train_labels, HR_TASK_SPEC.num_classes) if settings["use_class_weights"] else None
+    monitor = "val_accuracy" if not val_frame.empty else "accuracy"
     fit_kwargs = {
         "x": train_dataset,
         "epochs": settings["epochs"],
-        "callbacks": build_callbacks(checkpoint_path, patience=settings["patience"]),
+        "callbacks": build_callbacks(checkpoint_path, patience=settings["patience"], monitor=monitor),
         "class_weight": class_weights,
         "verbose": 1,
     }
@@ -181,6 +188,7 @@ def main() -> None:
             "test_samples": int(len(test_frame)),
             "class_weights": class_weights or {},
             "config": settings,
+            "severity_classes": list(HR_CLASS_NAMES),
         },
         run_dir / "run_summary.json",
     )
@@ -194,4 +202,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

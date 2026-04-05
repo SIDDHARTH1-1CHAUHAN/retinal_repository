@@ -45,4 +45,4 @@ outputs:
   label_map_name: label_order.json
   confusion_matrix_name: confusion_matrix.csv
   confusion_matrix_figure_name: confusion_matrix.png
-  evaluation_split: val
+  evaluation_split: test

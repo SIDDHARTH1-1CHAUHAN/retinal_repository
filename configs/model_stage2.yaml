@@ -46,6 +46,7 @@ stage2_hr:
 inference:
   stage1:
     model_path: reports/stage1/best_model.keras
+    label_map_path: reports/stage1/label_order.json
     labels: [normal, dr, hr]
     load_strategy: preloaded_model_or_custom_objects
   stage2:

@@ -6,7 +6,8 @@ project:
     - tensorflow
     - keras
     - opencv
-    - google-colab
+    - streamlit
+    - kaggle
 
 interface_contract:
   metadata: data/metadata/master.csv
@@ -14,6 +15,7 @@ interface_contract:
     train: data/splits/train.csv
     val: data/splits/val.csv
     test: data/splits/test.csv
+    external_test: data/splits/external_test.csv
   image_tensor:
     shape: [224, 224, 3]
     dtype: float32
@@ -21,17 +23,22 @@ interface_contract:
   final_prediction_fields:
     - disease
     - severity
+    - grade
     - confidence
+    - stage1_confidence
+    - stage2_confidence
+    - stage1_probabilities
+    - stage2_probabilities
 
 labels:
   stage1:
     normal: 0
     dr: 1
     hr: 2
-  stage2_dr: [0, 1, 2, 3, 4]
+  stage2_dr: [1, 2, 3, 4]
   stage2_hr: [1, 2, 3, 4]
   inference_rule:
-    normal: 0
+    normal: return_grade_0
     dr: call_dr_grader
     hr: call_hr_grader
 
@@ -69,38 +76,69 @@ splits:
   stratify_columns:
     - source_dataset
     - disease_label
+    - severity_bucket
   duplicate_guard:
     method: exact_dhash_after_preprocessing
-    notes: Prevents identical duplicates from crossing splits when processed tensors are available.
+    notes: Prevent identical or near-identical duplicates from crossing train/val/test or external-test boundaries.
+
+external_test:
+  exclude_quality_flags:
+    - missing_diagnosis
+    - unknown_grade
+    - missing_fundus_image
+    - ambiguous_stage0_with_lesions
+
+kaggle:
+  repo_dir_name: wt-integrate
+  expected_runtime: free_gpu
+  training_datasets:
+    dr_combined: https://www.kaggle.com/datasets/harsha1289/combined-dr-dataset-aptosidridmessidoreyepacs
+    eyepacs: https://www.kaggle.com/datasets/dreamer07/eyepacs
+  hr_sources:
+    odir: attach_public_odir_dataset
+    rvm: attach_private_or_uploaded_rvm_dataset
 
 datasets:
   eyepacs:
     enabled: true
     required: false
-    parser: eyepacs
+    parser: dr_grading
     labels_csv: data/raw/eyepacs/trainLabels.csv
     image_dir: data/raw/eyepacs/images
     image_column: image
     grade_column: level
     is_manual_label: true
+    dataset_role: train
   aptos:
     enabled: true
     required: false
-    parser: aptos
+    parser: dr_grading
     labels_csv: data/raw/aptos/train.csv
     image_dir: data/raw/aptos/images
     image_column: id_code
     grade_column: diagnosis
     is_manual_label: true
+    dataset_role: train
   messidor:
-    enabled: false
+    enabled: true
     required: false
-    parser: messidor
+    parser: dr_grading
     labels_csv: data/raw/messidor/labels.csv
     image_dir: data/raw/messidor/images
     image_column: image_id
     grade_column: dr_grade
     is_manual_label: true
+    dataset_role: train
+  idrid:
+    enabled: true
+    required: false
+    parser: dr_grading
+    labels_csv: data/raw/idrid/labels.csv
+    image_dir: data/raw/idrid/images
+    image_column: image_id
+    grade_column: dr_grade
+    is_manual_label: true
+    dataset_role: train
   odir:
     enabled: true
     required: true
@@ -108,6 +146,7 @@ datasets:
     labels_csv: data/raw/odir/full_df.csv
     image_dir: data/raw/odir/images
     is_manual_label: true
+    dataset_role: train
   rvm:
     enabled: true
     required: true
@@ -117,27 +156,12 @@ datasets:
     image_column: image_id
     grade_column: hr_grade
     is_manual_label: true
-  diaretdb1:
-    enabled: false
+    dataset_role: train
+  clinical_dr_test:
+    enabled: true
     required: false
-    parser: support_binary
-    labels_csv: data/raw/diaretdb1/labels.csv
-    image_dir: data/raw/diaretdb1/images
-    positive_label: dr
+    parser: clinical_dr_text
+    dataset_dir: ../test_data/Clinical Retinal Image Database
+    skip_unknown_grades: true
     is_manual_label: true
-  stare:
-    enabled: false
-    required: false
-    parser: support_binary
-    labels_csv: data/raw/stare/labels.csv
-    image_dir: data/raw/stare/images
-    positive_label: dr
-    is_manual_label: true
-  drive:
-    enabled: false
-    required: false
-    parser: support_binary
-    labels_csv: data/raw/drive/labels.csv
-    image_dir: data/raw/drive/images
-    positive_label: dr
-    is_manual_label: true
+    dataset_role: external_test

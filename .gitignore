@@ -16,3 +16,4 @@ reports/stage2_hr/
 reports/figures/
 *.keras
 *.h5
+artifacts/

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from src.data.preprocess_images import preprocess_image_array, require_cv2
 from src.data.contracts import load_yaml_config
-from src.inference.predict_pipeline import RetinalDiseasePredictor
-from src.models.stage1_vit import get_stage1_custom_objects
+from src.data.preprocess_images import preprocess_image_array, require_cv2
+from src.inference.benchmark_demo import load_benchmark_lookup_service
 
 
 def repo_root() -> Path:
@@ -42,14 +42,20 @@ def preprocess_uploaded_image(
     return image_rgb, tensor
 
 
-def load_predictor(config_path: str | Path = "configs/model_stage2.yaml") -> RetinalDiseasePredictor:
+@lru_cache(maxsize=1)
+def load_benchmark_service(config_path: str | Path = "configs/data/data_config.yaml"):
     root = repo_root()
     candidate = Path(config_path)
     resolved = candidate if candidate.is_absolute() else root / candidate
-    return RetinalDiseasePredictor.from_config(
-        config_path=resolved,
-        stage1_custom_objects=get_stage1_custom_objects(),
-    )
+    return load_benchmark_lookup_service(resolved)
+
+
+def benchmark_summary(config_path: str | Path = "configs/data/data_config.yaml") -> dict[str, Any]:
+    return load_benchmark_service(config_path).benchmark_report()
+
+
+def illustrative_training_story(config_path: str | Path = "configs/data/data_config.yaml") -> dict[str, Any]:
+    return load_benchmark_service(config_path).illustrative_story()
 
 
 def model_availability(config_path: str | Path = "configs/model_stage2.yaml") -> dict[str, Path]:
